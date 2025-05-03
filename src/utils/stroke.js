@@ -27,6 +27,7 @@ export const getSVGPath = (points) => {
 
 let currentContextId = null;
 let lastSvgPath = [];
+let lastPointIndex = 0;
 
 /**
  *
@@ -39,6 +40,7 @@ export const getStrokePoints = (rawPoints, contextId) => {
   if (contextId !== currentContextId) {
     currentContextId = contextId;
     lastSvgPath = [];
+    lastPointIndex = 0;
   }
   if (rawPoints.length <= 3) return []; // @todo
 
@@ -46,17 +48,12 @@ export const getStrokePoints = (rawPoints, contextId) => {
 
   const getPointRadius = (point) => (point[2] || 0.5) * RADIUS;
 
-  const lastPointIndex = 0; //lastSvgPath.length;
   const strokePaths = [...lastSvgPath];
 
-  debugTextElement.innerText = lastSvgPath.length;
+  debugTextElement.innerText = rawPoints.length;
 
   // Loop through each points, EXCEPT for last point
-  for (
-    let index = Math.max(0, lastPointIndex - 3 /* subtract for safety */);
-    index < rawPoints.length - 1;
-    index++
-  ) {
+  for (let index = lastPointIndex; index < rawPoints.length - 1; index++) {
     // @todo optimize with memoization
     const currentStrokePaths = [];
     const circlePoints = [];
@@ -146,7 +143,9 @@ export const getStrokePoints = (rawPoints, contextId) => {
     strokePaths.push(currentStrokePaths.join(""));
   }
 
-  lastSvgPath = [...strokePaths];
+  // lastSvgPath = [...strokePaths];
+  // lastPointIndex = rawPoints.length - 1;
+
   return strokePaths.join(" ");
 };
 
