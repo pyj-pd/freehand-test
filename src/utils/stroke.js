@@ -1,3 +1,5 @@
+import { getPointsAngle, getPointsDistance, rotatePoint } from "./point";
+
 export const getSVGPath = (points) => {
   if (points.length < 1) return "";
 
@@ -23,9 +25,9 @@ export const getSVGPath = (points) => {
 };
 
 export const getStrokePoints = (rawPoints) => {
-  if (rawPoints.length < 2) return []; // @todo
+  if (rawPoints.length <= 3) return []; // @todo
 
-  const RADIUS = 10;
+  const RADIUS = 50;
 
   const getPointRadius = (point) => (point[2] || 0.5) * RADIUS;
 
@@ -37,11 +39,23 @@ export const getStrokePoints = (rawPoints) => {
     const circlePoints = [];
     let radiuses = [];
 
+    const centerPointsAngle = getPointsAngle(
+      rawPoints[index],
+      rawPoints[index >= rawPoints.length - 1 ? index - 1 : index + 1]
+    );
+    const centerPointsDirectionAngle = getPointsAngle(
+      rawPoints[index],
+      rawPoints[index >= rawPoints.length - 2 ? index - 1 : index + 2]
+    );
+    const centerPointsDistance = getPointsDistance(
+      rawPoints[index],
+      rawPoints[index >= rawPoints.length - 1 ? index - 1 : index + 1]
+    );
+
     // Circle around the two points for strokes
     for (let pointIndex = 0; pointIndex < 2; pointIndex++) {
       const originPoint = rawPoints[index + pointIndex];
       const anotherPoint = rawPoints[index + (1 - pointIndex)];
-      const pointsDistance = getPointsDistance(originPoint, anotherPoint);
 
       const currentRadius = getPointRadius(originPoint);
       radiuses.push(currentRadius);
@@ -52,7 +66,7 @@ export const getStrokePoints = (rawPoints) => {
       );
       for (let i = 0; i < 2; i++)
         currentCirclePoints.push(
-          rotatePointCounterClockwise90(originPoint, currentCirclePoints[i])
+          rotatePoint(originPoint, currentCirclePoints[i], null, -Math.PI / 2)
         );
       circlePoints.push(...currentCirclePoints);
 
@@ -65,30 +79,38 @@ export const getStrokePoints = (rawPoints) => {
         i++
       ) {
         const currentCirclePointIndex = i % (LOOP_FOR * 2);
-        const point = circlePoints[currentCirclePointIndex];
+        const circlePoint = circlePoints[currentCirclePointIndex];
 
         const isFirstPoint = i === 0;
         if (isFirstPoint) {
-          strokePaths.push(`M ${point[0]} ${point[1]}`);
+          strokePaths.push(`M ${circlePoint[0]} ${circlePoint[1]}`);
           continue;
         }
 
         // First control point
-        const previousPoint = circlePoints[i - 1];
+        const previousCirclePoint = circlePoints[i - 1];
         const previousCenterPoint =
           i - 1 <= 2 ? rawPoints[index + 0] : rawPoints[index + 1];
         const previousRadius = i - 1 <= 2 ? radiuses[0] : currentRadius; // If previous circle point is based on previous center point, use previous radius. Otherwise current radius.
         const firstControlPointRadius =
           i === 3 || i === 6
-            ? pointsDistance / 3
+            ? centerPointsDistance / 3
             : getCircleBezierCurveControlPointsDistance(previousRadius);
 
-        const firstControlPoint = rotatePoint90(
-          previousPoint,
+        let firstControlPoint = rotatePoint(
+          previousCirclePoint,
           previousCenterPoint,
           firstControlPointRadius,
-          1
+          Math.PI / 2
         );
+
+        if (i === 3 || i === 6)
+          firstControlPoint = rotatePoint(
+            previousCirclePoint,
+            firstControlPoint,
+            null,
+            -(centerPointsDirectionAngle - centerPointsAngle)
+          );
 
         // Second control point
         const currentCenterPoint =
@@ -97,18 +119,26 @@ export const getStrokePoints = (rawPoints) => {
             : rawPoints[index + 1];
         const secondControlPointRadius =
           i === 3 || i === 6
-            ? pointsDistance / 3
+            ? centerPointsDistance / 3
             : getCircleBezierCurveControlPointsDistance(currentRadius);
 
-        const secondControlPoint = rotatePoint90(
-          point,
+        let secondControlPoint = rotatePoint(
+          circlePoint,
           currentCenterPoint,
           secondControlPointRadius,
-          -1
+          -Math.PI / 2
         );
 
+        if (i === 3 || i === 6)
+          secondControlPoint = rotatePoint(
+            circlePoint,
+            secondControlPoint,
+            null,
+            centerPointsDirectionAngle - centerPointsAngle
+          );
+
         strokePaths.push(
-          `C ${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${point[0]} ${point[1]}`
+          `C ${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${circlePoint[0]} ${circlePoint[1]}`
         );
       }
     }
@@ -119,61 +149,8 @@ export const getStrokePoints = (rawPoints) => {
   return strokePaths.join(" ");
 };
 
-export const getPointsDistance = (point1, point2) =>
-  Math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2);
-
-// @todo DRY
-export const rotatePoint90 = (
-  centerPoint,
-  anotherPoint,
-  distance,
-  clockwiseRotation = 1
-) => {
-  // Rotate `centerPoint` by 90 degrees clockwise(-1) or counter clockwise(1) around `anotherPoint`,
-  // and make that rotated point have radius of `distance`.
-  const denominator = Math.sqrt(
-    (centerPoint[0] - anotherPoint[0]) ** 2 +
-      (centerPoint[1] - anotherPoint[1]) ** 2
-  );
-
-  const x =
-    centerPoint[0] +
-    (clockwiseRotation * (distance * (anotherPoint[1] - centerPoint[1]))) /
-      denominator;
-
-  const y =
-    centerPoint[1] +
-    (-1 * clockwiseRotation * (distance * (anotherPoint[0] - centerPoint[0]))) /
-      denominator;
-
-  return [x, y];
-};
-
-export const rotatePointCounterClockwise270 = (
-  centerPoint,
-  anotherPoint,
-  distance
-) => {
-  // Rotate `anotherPoint` by 270 degrees counter clockwise,
-  // and make that rotated point have distance of `distance` from `centerPoint`.
-  const denominator = Math.sqrt(
-    (anotherPoint[0] - centerPoint[0]) ** 2 +
-      (anotherPoint[1] - centerPoint[1]) ** 2
-  );
-
-  const x =
-    centerPoint[0] -
-    (distance * (anotherPoint[1] - centerPoint[1])) / denominator;
-
-  const y =
-    centerPoint[1] +
-    (distance * (anotherPoint[0] - centerPoint[0])) / denominator;
-
-  return [x, y];
-};
-
 export const getCirclePoint = (centerPoint, anotherPoint, radius) => {
-  return rotatePointCounterClockwise270(centerPoint, anotherPoint, radius);
+  return rotatePoint(centerPoint, anotherPoint, radius, -Math.PI / 2);
 };
 
 export const rotatePointCounterClockwise90 = (originPoint, point) => {
