@@ -27,7 +27,7 @@ export const getSVGPath = (points) => {
 export const getStrokePoints = (rawPoints) => {
   if (rawPoints.length <= 3) return []; // @todo
 
-  const RADIUS = 50;
+  const RADIUS = 10;
 
   const getPointRadius = (point) => (point[2] || 0.5) * RADIUS;
 
@@ -97,20 +97,12 @@ export const getStrokePoints = (rawPoints) => {
             ? centerPointsDistance / 3
             : getCircleBezierCurveControlPointsDistance(previousRadius);
 
-        let firstControlPoint = rotatePoint(
+        const firstControlPoint = rotatePoint(
           previousCirclePoint,
           previousCenterPoint,
           firstControlPointRadius,
           Math.PI / 2
         );
-
-        if (i === 3 || i === 6)
-          firstControlPoint = rotatePoint(
-            previousCirclePoint,
-            firstControlPoint,
-            null,
-            -(centerPointsDirectionAngle - centerPointsAngle)
-          );
 
         // Second control point
         const currentCenterPoint =
@@ -122,20 +114,12 @@ export const getStrokePoints = (rawPoints) => {
             ? centerPointsDistance / 3
             : getCircleBezierCurveControlPointsDistance(currentRadius);
 
-        let secondControlPoint = rotatePoint(
+        const secondControlPoint = rotatePoint(
           circlePoint,
           currentCenterPoint,
           secondControlPointRadius,
           -Math.PI / 2
         );
-
-        if (i === 3 || i === 6)
-          secondControlPoint = rotatePoint(
-            circlePoint,
-            secondControlPoint,
-            null,
-            centerPointsDirectionAngle - centerPointsAngle
-          );
 
         strokePaths.push(
           `C ${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${circlePoint[0]} ${circlePoint[1]}`
