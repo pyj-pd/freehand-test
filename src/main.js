@@ -1,14 +1,18 @@
 import "./style.css";
-import { getStrokePoints, getSVGPath } from "./utils/stroke";
+import { generateRandomId } from "./utils/random";
+import { getStrokePoints } from "./utils/stroke";
+import {
+  debugTextElement,
+  drawingBoardElement,
+  svgPathElement,
+} from "./elements";
 
 let points = null;
-
-const drawingBoard = document.getElementById("drawing-board");
-const debugSpan = document.getElementById("debug");
-const svgPath = drawingBoard.querySelector("path");
+let pathContextId = null; // @todo use class
 
 function onPointerDown(event) {
   points = [];
+  pathContextId = generateRandomId();
 }
 
 /**
@@ -32,24 +36,25 @@ function onPointerMove(event) {
     }
   } else points.push(currentPointData);
 
-  debugSpan.innerText = `${event.clientX}, ${event.clientY}, ${event.pressure}, ${points.length}`;
+  // debugSpan.innerText = `${event.clientX}, ${event.clientY}, ${event.pressure}, ${points.length}`;
 
-  const path = getStrokePoints(points);
-  svgPath.setAttribute("d", path);
+  const path = getStrokePoints(points, pathContextId);
+  svgPathElement.setAttribute("d", path);
 }
 
 function onPointerUp(event) {
   points = null;
+  pathContextId = null;
 }
 
-drawingBoard.addEventListener("pointerdown", onPointerDown);
-drawingBoard.addEventListener("pointermove", onPointerMove);
-drawingBoard.addEventListener("pointerup", onPointerUp);
-drawingBoard.addEventListener("pointerleave", onPointerUp);
+drawingBoardElement.addEventListener("pointerdown", onPointerDown);
+drawingBoardElement.addEventListener("pointermove", onPointerMove);
+drawingBoardElement.addEventListener("pointerup", onPointerUp);
+drawingBoardElement.addEventListener("pointerleave", onPointerUp);
 
-drawingBoard.setAttribute("width", `${document.body.clientWidth}`);
-drawingBoard.setAttribute("height", `${document.body.clientHeight}`);
-drawingBoard.setAttribute(
+drawingBoardElement.setAttribute("width", `${document.body.clientWidth}`);
+drawingBoardElement.setAttribute("height", `${document.body.clientHeight}`);
+drawingBoardElement.setAttribute(
   "viewBox",
   `0 0 ${document.body.clientWidth} ${document.body.clientHeight}`
 );

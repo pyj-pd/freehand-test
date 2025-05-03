@@ -1,3 +1,4 @@
+import { debugTextElement } from "../elements";
 import { getPointsAngle, getPointsDistance, rotatePoint } from "./point";
 
 export const getSVGPath = (points) => {
@@ -24,29 +25,43 @@ export const getSVGPath = (points) => {
   return d.join(" ");
 };
 
-export const getStrokePoints = (rawPoints) => {
+let currentContextId = null;
+let lastSvgPath = [];
+
+/**
+ *
+ * @param {*} rawPoints
+ * @param {*} contextId Used for memoization. @todo use class
+ * @returns
+ */
+export const getStrokePoints = (rawPoints, contextId) => {
+  // Initialize
+  if (contextId !== currentContextId) {
+    currentContextId = contextId;
+    lastSvgPath = [];
+  }
   if (rawPoints.length <= 3) return []; // @todo
 
   const RADIUS = 10;
 
   const getPointRadius = (point) => (point[2] || 0.5) * RADIUS;
 
-  const strokePaths = [];
+  const lastPointIndex = 0; //lastSvgPath.length;
+  const strokePaths = [...lastSvgPath];
+
+  debugTextElement.innerText = lastSvgPath.length;
 
   // Loop through each points, EXCEPT for last point
-  for (let index = 0; index < rawPoints.length - 1; index++) {
+  for (
+    let index = Math.max(0, lastPointIndex - 3 /* subtract for safety */);
+    index < rawPoints.length - 1;
+    index++
+  ) {
     // @todo optimize with memoization
+    const currentStrokePaths = [];
     const circlePoints = [];
     let radiuses = [];
 
-    const centerPointsAngle = getPointsAngle(
-      rawPoints[index],
-      rawPoints[index >= rawPoints.length - 1 ? index - 1 : index + 1]
-    );
-    const centerPointsDirectionAngle = getPointsAngle(
-      rawPoints[index],
-      rawPoints[index >= rawPoints.length - 2 ? index - 1 : index + 2]
-    );
     const centerPointsDistance = getPointsDistance(
       rawPoints[index],
       rawPoints[index >= rawPoints.length - 1 ? index - 1 : index + 1]
@@ -83,7 +98,7 @@ export const getStrokePoints = (rawPoints) => {
 
         const isFirstPoint = i === 0;
         if (isFirstPoint) {
-          strokePaths.push(`M ${circlePoint[0]} ${circlePoint[1]}`);
+          currentStrokePaths.push(`M${circlePoint[0]} ${circlePoint[1]}`);
           continue;
         }
 
@@ -121,15 +136,17 @@ export const getStrokePoints = (rawPoints) => {
           -Math.PI / 2
         );
 
-        strokePaths.push(
-          `C ${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${circlePoint[0]} ${circlePoint[1]}`
+        currentStrokePaths.push(
+          `C${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${circlePoint[0]} ${circlePoint[1]}`
         );
       }
     }
 
-    strokePaths.push("Z");
+    currentStrokePaths.push("Z");
+    strokePaths.push(currentStrokePaths.join(""));
   }
 
+  lastSvgPath = [...strokePaths];
   return strokePaths.join(" ");
 };
 
