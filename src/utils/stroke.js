@@ -45,8 +45,6 @@ export const getStrokePoints = (rawPoints) => {
 
     let currentStrokePaths = [];
 
-    let firstPoint;
-
     const circlePoints = [];
     let radiuses = [];
 
@@ -81,8 +79,6 @@ export const getStrokePoints = (rawPoints) => {
         const point = circlePoints[currentCirclePointIndex];
 
         const isFirstPoint = i === 0;
-        if (isFirstPoint) firstPoint = point;
-
         if (isFirstPoint) strokePaths.push(`M ${point[0]} ${point[1]}`);
         else {
           // First control point
@@ -125,8 +121,6 @@ export const getStrokePoints = (rawPoints) => {
         }
       }
     }
-
-    strokePaths.push(`L ${firstPoint[0]} ${firstPoint[1]}`);
 
     strokePaths.push(...currentStrokePaths);
   }
