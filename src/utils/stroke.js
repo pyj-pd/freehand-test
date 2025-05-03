@@ -34,17 +34,6 @@ export const getStrokePoints = (rawPoints) => {
   // Loop through each points, EXCEPT for last point
   for (let index = 0; index < rawPoints.length - 1; index++) {
     // @todo optimize with memoization
-    // let slope;
-
-    // if (index <= 0) slope = getSlope(rawPoints[index], rawPoints[index + 1]);
-    // else if (index >= rawPoints.length - 1)
-    //   slope = getSlope(rawPoints[index], rawPoints[index - 1]);
-    // else slope = getSlope(rawPoints[index - 1], rawPoints[index + 1]);
-
-    // let perpendicularSlope = -1 / slope;
-
-    let currentStrokePaths = [];
-
     const circlePoints = [];
     let radiuses = [];
 
@@ -79,50 +68,52 @@ export const getStrokePoints = (rawPoints) => {
         const point = circlePoints[currentCirclePointIndex];
 
         const isFirstPoint = i === 0;
-        if (isFirstPoint) strokePaths.push(`M ${point[0]} ${point[1]}`);
-        else {
-          // First control point
-          const previousPoint = circlePoints[i - 1];
-          const previousCenterPoint =
-            i - 1 <= 2 ? rawPoints[index + 0] : rawPoints[index + 1];
-          const previousRadius = i - 1 <= 2 ? radiuses[0] : currentRadius; // If previous circle point is based on previous center point, use previous radius. Otherwise current radius.
-          const firstControlPointRadius =
-            i === 3 || i === 6
-              ? pointsDistance / 3
-              : getCircleBezierCurveControlPointsDistance(previousRadius);
-
-          const firstControlPoint = rotatePoint90(
-            previousPoint,
-            previousCenterPoint,
-            firstControlPointRadius,
-            1
-          );
-
-          // Second control point
-          const currentCenterPoint =
-            currentCirclePointIndex <= 2
-              ? rawPoints[index + 0]
-              : rawPoints[index + 1];
-          const secondControlPointRadius =
-            i === 3 || i === 6
-              ? pointsDistance / 3
-              : getCircleBezierCurveControlPointsDistance(currentRadius);
-
-          const secondControlPoint = rotatePoint90(
-            point,
-            currentCenterPoint,
-            secondControlPointRadius,
-            -1
-          );
-
-          strokePaths.push(
-            `C ${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${point[0]} ${point[1]}`
-          );
+        if (isFirstPoint) {
+          strokePaths.push(`M ${point[0]} ${point[1]}`);
+          continue;
         }
+
+        // First control point
+        const previousPoint = circlePoints[i - 1];
+        const previousCenterPoint =
+          i - 1 <= 2 ? rawPoints[index + 0] : rawPoints[index + 1];
+        const previousRadius = i - 1 <= 2 ? radiuses[0] : currentRadius; // If previous circle point is based on previous center point, use previous radius. Otherwise current radius.
+        const firstControlPointRadius =
+          i === 3 || i === 6
+            ? pointsDistance / 3
+            : getCircleBezierCurveControlPointsDistance(previousRadius);
+
+        const firstControlPoint = rotatePoint90(
+          previousPoint,
+          previousCenterPoint,
+          firstControlPointRadius,
+          1
+        );
+
+        // Second control point
+        const currentCenterPoint =
+          currentCirclePointIndex <= 2
+            ? rawPoints[index + 0]
+            : rawPoints[index + 1];
+        const secondControlPointRadius =
+          i === 3 || i === 6
+            ? pointsDistance / 3
+            : getCircleBezierCurveControlPointsDistance(currentRadius);
+
+        const secondControlPoint = rotatePoint90(
+          point,
+          currentCenterPoint,
+          secondControlPointRadius,
+          -1
+        );
+
+        strokePaths.push(
+          `C ${firstControlPoint[0]} ${firstControlPoint[1]}, ${secondControlPoint[0]} ${secondControlPoint[1]}, ${point[0]} ${point[1]}`
+        );
       }
     }
 
-    strokePaths.push(...currentStrokePaths);
+    strokePaths.push("Z");
   }
 
   return strokePaths.join(" ");
@@ -130,9 +121,6 @@ export const getStrokePoints = (rawPoints) => {
 
 export const getPointsDistance = (point1, point2) =>
   Math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2);
-
-// export const getSlope = (point1, point2) =>
-//   (point1[1] - point2[1]) / (point1[0] - point2[0]);
 
 // @todo DRY
 export const rotatePoint90 = (
@@ -194,21 +182,6 @@ export const rotatePointCounterClockwise90 = (originPoint, point) => {
 
   return [x, y];
 };
-
-// export const movePointParallel = (originPoint, dx, dy) => {
-//   const x = originPoint[0] + dx;
-//   const y = originPoint[1] + dy;
-
-//   return [x, y];
-// };
-
-// export const movePoint = (originPoint, radius, slope, direction = 1) => {
-//   const x = originPoint[0] + direction * (radius / Math.sqrt(slope ** 2 + 1));
-//   const y =
-//     originPoint[1] + direction * ((slope * radius) / Math.sqrt(slope ** 2 + 1));
-
-//   return [x, y];
-// };
 
 /** @see https://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves */
 export const getCircleBezierCurveControlPointsDistance = (radius) => {
