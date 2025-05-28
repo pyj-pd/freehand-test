@@ -49,3 +49,7 @@ pnpm run dev --host
 ```
 
 Use the second one with `--host` flag to connect to the dev server from other devices in local network. I recommend testing the pressure-sensitive drawing on devices with stylus support, like iPad with Apple Pencil.
+
+### File structure
+
+[stroke.js](src/utils/stroke.js) file is the main part that handles SVG path.
