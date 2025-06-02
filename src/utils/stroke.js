@@ -153,13 +153,6 @@ export const getCirclePoint = (centerPoint, anotherPoint, radius) => {
   return rotatePoint(centerPoint, anotherPoint, radius, -Math.PI / 2);
 };
 
-export const rotatePointCounterClockwise90 = (originPoint, point) => {
-  const x = -(point[1] - originPoint[1]) + originPoint[0];
-  const y = point[0] - originPoint[0] + originPoint[1];
-
-  return [x, y];
-};
-
 /** @see https://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves */
 export const getCircleBezierCurveControlPointsDistance = (radius) => {
   //   return (4 / 3) * Math.tan(Math.PI / 8) * radius;
